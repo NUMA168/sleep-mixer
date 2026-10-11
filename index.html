@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>眠りの音ミキサー</title>
+<style>
+:root{--bg:#f4f1ea;--card:#fffdf8;--text:#2b2a33;--muted:#76738a;--accent:#5b6bd6;--line:#e4dfd3;
+ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1220;--card:#181c30;--text:#e8e9f3;--muted:#9a9db8;--accent:#8e9bff;--line:#262b45}}
+:root[data-theme="dark"]{--bg:#0f1220;--card:#181c30;--text:#e8e9f3;--muted:#9a9db8;--accent:#8e9bff;--line:#262b45}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.5}
+main{max-width:640px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.35rem;margin:8px 0 2px}
+.sub{color:var(--muted);font-size:.85rem;margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:14px}
+.top{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+#play{background:var(--accent);color:#fff;border:0;border-radius:999px;padding:12px 26px;font-size:1rem;font-weight:600;cursor:pointer;min-width:120px}
+#play[data-on="1"]{background:transparent;color:var(--accent);outline:2px solid var(--accent)}
+.vol{flex:1;min-width:160px;display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--muted)}
+.vol input{flex:1}
+h2{font-size:.8rem;letter-spacing:.08em;color:var(--muted);margin:22px 4px 8px;font-weight:600}
+.row{display:grid;grid-template-columns:1.6rem 1fr 3.2rem;gap:4px 10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .nm{font-size:.92rem}
+.row .st{font-size:.72rem;color:var(--muted);min-height:1em}
+.row input{grid-column:2/3;width:100%}
+.row .pc{grid-column:3;grid-row:1/3;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:.85rem}
+.row .em{grid-row:1/3;font-size:1.2rem}
+input[type=range]{accent-color:var(--accent);height:28px}
+.dl{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.dl button{border:1px dashed var(--muted);background:transparent;color:var(--muted);border-radius:10px;padding:8px 14px;font-size:.85rem}
+.dl span{font-size:.78rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+<h1>🌙 眠りの音ミキサー</h1>
+<p class="sub">好きな音を重ねて、スライダーで音量を調整。ずっとループして流れ続けます。</p>
+<div class="card top">
+ <button id="play" data-on="0">▶ 再生</button>
+ <label class="vol">全体の音量 <input id="master" type="range" min="0" max="100" value="85"></label>
+</div>
+<div id="list"></div>
+<div class="card dl"><span>この組み合わせをダウンロード（有料・準備中）</span><button disabled>ダウンロード</button></div>
+</main>
+<script>
+const DATA=[{"group": "雨・水", "items": [{"name": "雨が降る", "emoji": "🌧️", "def": 0, "src": "sounds/01.mp3"}, {"name": "水のしたたる洞窟", "emoji": "💧", "def": 0, "src": "sounds/02.mp3"}]}, {"group": "風・草木", "items": [{"name": "風が吹く 1", "emoji": "🌬️", "def": 0, "src": "sounds/03.mp3"}, {"name": "風が吹く 2", "emoji": "🌬️", "def": 0, "src": "sounds/04.mp3"}, {"name": "風に揺れる草木 1", "emoji": "🌿", "def": 70, "src": "sounds/05.mp3"}, {"name": "風に揺れる草木 2", "emoji": "🌿", "def": 0, "src": "sounds/06.mp3"}]}, {"group": "鳥", "items": [{"name": "ヒバリのさえずり", "emoji": "🐦", "def": 70, "src": "sounds/07.mp3"}, {"name": "軽井沢の野鳥たち 1", "emoji": "🐤", "def": 45, "src": "sounds/08.mp3"}, {"name": "軽井沢の野鳥たち 2", "emoji": "🐤", "def": 0, "src": "sounds/09.mp3"}, {"name": "アカヒゲ（奄美大島の森）", "emoji": "🪶", "def": 0, "src": "sounds/10.mp3"}, {"name": "リュウキュウコノハズク（奄美大島の森）", "emoji": "🦉", "def": 0, "src": "sounds/11.mp3"}]}, {"group": "山・夜", "items": [{"name": "春の山", "emoji": "⛰️", "def": 0, "src": "sounds/12.mp3"}, {"name": "夏の山", "emoji": "🏔️", "def": 0, "src": "sounds/13.mp3"}, {"name": "夏の田舎の夜", "emoji": "🌙", "def": 0, "src": "sounds/14.mp3"}]}, {"group": "海", "items": [{"name": "海岸 1", "emoji": "🌊", "def": 0, "src": "sounds/15.mp3"}, {"name": "海岸 2", "emoji": "🌊", "def": 0, "src": "sounds/16.mp3"}, {"name": "カモメが鳴くビーチ", "emoji": "🏖️", "def": 0, "src": "sounds/17.mp3"}]}, {"group": "火", "items": [{"name": "たき火", "emoji": "🔥", "def": 0, "src": "sounds/18.mp3"}]}];
+const $=s=>document.querySelector(s);
+let ctx=null,master=null,playing=false,mv=.85;
+const N=128,FIN=new Float32Array(N),FOUT=new Float32Array(N);
+for(let i=0;i<N;i++){const a=i/(N-1)*Math.PI/2;FIN[i]=Math.sin(a);FOUT[i]=Math.cos(a)}
+const tracks=[];
+const list=$('#list');
+DATA.forEach(g=>{
+  const h=document.createElement('h2');h.textContent=g.group;list.appendChild(h);
+  const card=document.createElement('div');card.className='card';list.appendChild(card);
+  g.items.forEach(it=>{
+    const t={name:it.name,src:it.src,vol:it.def,buf:null,gain:null,started:false,loading:false};
+    tracks.push(t);
+    const r=document.createElement('div');r.className='row';
+    r.innerHTML='<span class="em"></span><span><span class="nm"></span> <span class="st"></span></span><span class="pc"></span><input type="range" min="0" max="100">';
+    r.querySelector('.em').textContent=it.emoji;r.querySelector('.nm').textContent=it.name;
+    const inp=r.querySelector('input'),pc=r.querySelector('.pc');
+    t.st=r.querySelector('.st');inp.value=t.vol;pc.textContent=t.vol+'%';
+    inp.addEventListener('input',()=>{t.vol=+inp.value;pc.textContent=t.vol+'%';if(playing){if(t.vol>0)activate(t);applyGain(t)}});
+    card.appendChild(r);
+  });
+});
+function ensure(){
+  if(ctx)return;
+  ctx=new(window.AudioContext||window.webkitAudioContext)();
+  const comp=ctx.createDynamicsCompressor();comp.threshold.value=-8;comp.ratio.value=10;comp.attack.value=.01;comp.release.value=.3;
+  master=ctx.createGain();master.gain.value=mv;master.connect(comp);comp.connect(ctx.destination);
+}
+const decode=ab=>new Promise((ok,ng)=>{const p=ctx.decodeAudioData(ab,ok,ng);if(p&&p.catch)p.catch(ng)});
+function applyGain(t){if(t.gain)t.gain.gain.setTargetAtTime(Math.pow(t.vol/100,2),ctx.currentTime,.08)}
+async function activate(t){
+  if(t.started||t.loading)return;
+  try{
+    if(!t.buf){t.loading=true;t.st.textContent='読み込み中…';t.buf=await decode(await (await fetch(t.src)).arrayBuffer());t.loading=false;t.st.textContent=''}
+    t.gain=ctx.createGain();t.gain.gain.value=0;t.gain.connect(master);applyGain(t);
+    t.started=true;loop(t);
+  }catch(e){t.loading=false;t.st.textContent=location.protocol==='file:'?'ローカルでは読み込めません（Webで開いてください）':'読み込めませんでした'}
+}
+function loop(t){
+  const D=t.buf.duration,X=Math.min(4,D/3);let next=ctx.currentTime+.1,first=true;
+  const sched=()=>{
+    while(next<ctx.currentTime+10){
+      const s=ctx.createBufferSource();s.buffer=t.buf;
+      const g=ctx.createGain();s.connect(g);g.connect(t.gain);
+      if(!first){g.gain.value=0;g.gain.setValueCurveAtTime(FIN,next,X)}
+      g.gain.setValueCurveAtTime(FOUT,next+D-X,X);
+      s.start(next);first=false;next+=D-X;
+    }
+  };
+  sched();setInterval(sched,1000);
+}
+$('#play').addEventListener('click',async e=>{
+  const b=e.currentTarget;
+  if(!playing){
+    ensure();try{await ctx.resume()}catch(_){}
+    playing=true;b.dataset.on='1';b.textContent='⏸ 停止';
+    tracks.forEach(t=>{if(t.vol>0)activate(t)});
+  }else{
+    playing=false;b.dataset.on='0';b.textContent='▶ 再生';
+    try{await ctx.suspend()}catch(_){}
+  }
+});
+$('#master').addEventListener('input',e=>{mv=e.target.value/100;if(master)master.gain.setTargetAtTime(mv,ctx.currentTime,.05)});
+</script>
+</body>
+</html>
